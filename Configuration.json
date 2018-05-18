@@ -1,0 +1,6 @@
+{
+    "Port": ":3306",
+	"Pass": "22245714watata",
+	"DatabaseName": "test",
+	"UserName": "root"
+}
