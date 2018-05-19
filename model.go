@@ -6,9 +6,9 @@ import (
 )
 
 type Song struct {
-	Artist    int    `json:"artist"`
-	Name      string `json:"song"`
-	Genretype Genre  `json:"genre"`
+	Artist    string `json:"artist"`
+	Name      string `json:"title"`
+	Genretype string `json:"name"`
 	Duration  int    `json:"duration"`
 }
 
@@ -18,24 +18,47 @@ type Genre struct {
 }
 
 func (u *Song) getSongByName(db *sql.DB) error {
-	statement := fmt.Sprintf("select title,  artist, name, duration from songs inner join genres on (songs.genre=genres.id) where title=%s", u.Name)
-	return db.QueryRow(statement).Scan()
+	statement := fmt.Sprintf("select title,  artist, name, duration from songs inner join genres on (songs.genre=genres.id) where title='%s'", u.Name)
+	return db.QueryRow(statement).Scan(&u.Name, &u.Artist, &u.Genretype, &u.Duration)
 }
 
 func getSongsByArtist(db *sql.DB, artist string) ([]Song, error) {
-	statement := fmt.Sprintf("SELECT title,  artist, name, duration from songs inner join genres on (songs.genre=genres.id) where title=%s", artist)
+	statement := "SELECT title,  artist, name, duration from songs inner join genres on (songs.genre=genres.id) where artist='" + artist + "'"
 	rows, err := db.Query(statement)
 	if err != nil {
+		fmt.Println("error: " + err.Error())
 		return nil, err
 	}
 	defer rows.Close()
 	songs := []Song{}
 	for rows.Next() {
 		var u Song
-		if err := rows.Scan(); err != nil {
+		if err := rows.Scan(&u.Name, &u.Artist, &u.Genretype, &u.Duration); err != nil {
 			return nil, err
 		}
 		songs = append(songs, u)
 	}
+
+	return songs, nil
+}
+
+func getSongsByGenre(db *sql.DB, genre string) ([]Song, error) {
+	fmt.Println("---genre: ", genre)
+	statement := "SELECT title,  artist, name, duration from songs inner join genres on (songs.genre=genres.id) where name='" + genre + "'"
+	rows, err := db.Query(statement)
+	if err != nil {
+		fmt.Println("error: " + err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+	songs := []Song{}
+	for rows.Next() {
+		var u Song
+		if err := rows.Scan(&u.Name, &u.Artist, &u.Genretype, &u.Duration); err != nil {
+			return nil, err
+		}
+		songs = append(songs, u)
+	}
+
 	return songs, nil
 }

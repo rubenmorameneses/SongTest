@@ -17,12 +17,63 @@ type App struct {
 	DB     *sql.DB
 }
 
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"error": message})
+}
+
+// answers whatever output in jsons format
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
+}
+
+func (a *App) getSongsArtist(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	art := vars["artist"]
+	fmt.Println("artist: " + art)
+	songs, err := getSongsByArtist(a.DB, art)
+
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusNotFound, "Song not found")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	respondWithJSON(w, http.StatusOK, songs)
+}
+
+func (a *App) getSongsByGenre(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	gen := vars["genre"]
+	fmt.Println("gen: " + gen)
+	songs, err := getSongsByGenre(a.DB, gen)
+
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			respondWithError(w, http.StatusNotFound, "Song not found")
+		default:
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+	respondWithJSON(w, http.StatusOK, songs)
+}
+
 func (a *App) getSongByTittle(w http.ResponseWriter, r *http.Request) {
+
 	vars := mux.Vars(r)
 	tittle := vars["tittle"]
-
+	fmt.Println("tittle: " + tittle)
 	u := Song{Name: tittle}
-	if err := u.getSongByName(a.DB); err != nil {
+	err := u.getSongByName(a.DB)
+
+	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
 			respondWithError(w, http.StatusNotFound, "Song not found")
@@ -36,31 +87,10 @@ func (a *App) getSongByTittle(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, u)
 }
 
-func respondWithError(w http.ResponseWriter, code int, message string) {
-	respondWithJSON(w, code, map[string]string{"error": message})
-}
-
-// answers whatever output in jsons format
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-	response, _ := json.Marshal(payload)
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
-}
-
-func (a *App) getSongs(w http.ResponseWriter, r *http.Request) {
-	artist := r.FormValue("artist")
-	songs, err := getSongsByArtist(a.DB, artist)
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	respondWithJSON(w, http.StatusOK, songs)
-}
-
 func (a *App) initializeRoutes() {
-	a.Router.HandleFunc("/songs", a.getSongs).Methods("GET")
-	a.Router.HandleFunc("/song/{tittle:[a-z]+}", a.getSongByTittle).Methods("GET")
+	a.Router.HandleFunc("/songsByArtist/{artist:[a-zA-Z0-9]+}", a.getSongsArtist).Methods("GET")
+	a.Router.HandleFunc("/song/{tittle:[a-zA-Z0-9]+}", a.getSongByTittle).Methods("GET")
+	a.Router.HandleFunc("/songByGenre/{genre:[a-zA-Z0-9]+}", a.getSongsByGenre).Methods("GET")
 }
 
 func (a *App) Initialize(user, password, dbname string) {
