@@ -119,3 +119,18 @@ func TestGetSongsByGenre(t *testing.T) {
 	fmt.Println("response: ", response)
 	checkResponseCode(t, http.StatusOK, response.Code)
 }
+
+func TestGetSongsByDurationRange(t *testing.T) {
+	req, _ := http.NewRequest("GET", "getSongsByDurationRange", nil)
+	response := executeRequest(req)
+	fmt.Println("-------------------response:", response)
+	checkResponseCode(t, http.StatusOK, response.Code)
+	var m map[string]interface{}
+
+	json.Unmarshal(response.Body.Bytes(), &m)
+
+	// in the database given, there's 7 songs between 100 and 200 in duration
+	if len(m) != 7 {
+		t.Errorf("Expected 7 items")
+	}
+}

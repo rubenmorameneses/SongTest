@@ -3,10 +3,11 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	_ "strconv"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -27,6 +28,24 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(response)
+}
+
+func (a *App) getSongsByDurationRange(w http.ResponseWriter, r *http.Request) {
+	/*top, _ := strconv.Atoi(r.FormValue("start"))
+	start, _ := strconv.Atoi(r.FormValue("top"))
+	*/
+	start, _ := strconv.Atoi(r.FormValue("start"))
+	top, _ := strconv.Atoi(r.FormValue("top"))
+
+	if start < 0 || start > top {
+		respondWithError(w, http.StatusInternalServerError, errors.New("Incorrect intervals").Error())
+	}
+	songs, err := getSongsByDurationRange(a.DB, start, top)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	respondWithJSON(w, http.StatusOK, songs)
 }
 
 func (a *App) getSongsArtist(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +110,7 @@ func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/songsByArtist/{artist:[a-zA-Z0-9]+}", a.getSongsArtist).Methods("GET")
 	a.Router.HandleFunc("/song/{tittle:[a-zA-Z0-9]+}", a.getSongByTittle).Methods("GET")
 	a.Router.HandleFunc("/songByGenre/{genre:[a-zA-Z0-9]+}", a.getSongsByGenre).Methods("GET")
+	a.Router.HandleFunc("/songByDurationRange/{start:[0-9]+}/{top:[0-9]+}", a.getSongsByDurationRange).Methods("GET")
 }
 
 func (a *App) Initialize(user, password, dbname string) {

@@ -25,6 +25,7 @@ The API consists of 3 calls, to consult songs either by title, genre or artist, 
 - ip:port/songsByArtist/<Artist> (GET method)
 - ip:port/song/<tittle_song> (GET method)
 - ip:port/songByGenre/<genre> (GET method)
+- ip:port/songByGenre/<start>/<top> (GET method)
 
 It also has a configuration file (Configuration.json), in which we can change the properties to connect to the desired database:
 
